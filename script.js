@@ -12,7 +12,7 @@ let isMuted = false;
 
 function initBgm() {
   if (!bgm || !muteToggle) return;
-  bgm.volume = 0.2;   // ⭐ 音量在这里调（0 ~ 1）
+  bgm.volume = 0.2; // ⭐ 音量在这里调（0 ~ 1）
 
   const tryPlay = () => {
     bgm.play().catch(() => {});
@@ -51,38 +51,19 @@ if (username && questionText) {
 // ========= 一些常量 =========
 const DAY_LABEL = "这个周六";
 
-// 阶段枚举
+// 阶段枚举（已去掉抽卡 LOTTERY 阶段）
 const STAGE = {
-  FIRST: "first",          // xixi + 耶
-  POPUPS: "popups",        // 弹窗雨
-  QUIZ: "quiz",            // 问卷
-  INTRO: "intro",          // 自我介绍
-  TIME: "time",            // 选时间
-  LOTTERY: "lottery",      // 抽卡
-  FRIEND: "friend"         // 最终朋友卡
+  FIRST: "first", // xixi + 耶
+  POPUPS: "popups", // 弹窗雨
+  QUIZ: "quiz", // 问卷
+  INTRO: "intro", // 自我介绍
+  TIME: "time", // 选时间
+  FRIEND: "friend", // 最终朋友卡
 };
 
-// 从哪几个阶段开始有左右箭头
-const STAGES_WITH_NAV = new Set([
-  STAGE.QUIZ,
-  STAGE.INTRO,
-  STAGE.TIME,
-  STAGE.LOTTERY,
-  STAGE.FRIEND
-]);
-
-// 抽奖图片（你后面补真文件就好）
-const PRIZE_KEYS = [
-  "prize_1", "prize_2", "prize_3",
-  "prize_4", "prize_5", "prize_6",
-  "prize_7", "prize_8", "prize_9"
-];
-const PRIZE_IMAGES = PRIZE_KEYS.map(k => `images/${k}.jpg`);
-// 刮卡封面
-const CARD_COVER_IMAGE = "images/card_cover_dummy.jpg";
-
 // ======= 关键：这里填 ngrok 暴露出来的 HTTPS 地址 =======
-const API_BASE = "https://supervoluminously-penicillate-malia.ngrok-free.dev";
+const API_BASE =
+  "https://supervoluminously-penicillate-malia.ngrok-free.dev";
 
 // ======= 嘘寒问暖的弹窗内容 =======
 const careMessages = [
@@ -106,7 +87,8 @@ const careMessages = [
   "梦想成真",
   "照顾好自己",
   "注意保暖别感冒啦～",
-  "会好起来的"
+  "会好起来的",
+  "很高兴认识你"
 ];
 
 // ========= 全局状态：一次完整流程的数据 =========
@@ -116,14 +98,14 @@ let appState = {
   name: safeUsername || null,
   day: DAY_LABEL,
 
-  stage: null,          // 当前阶段
+  stage: null, // 当前阶段
 
   // 问卷相关
-  vibe: "",             // 氛围
-  activity: "",         // 活动偏好
-  role: "",             // 我的人设
-  mood_level: null,     // 1~5
-  mood_note: "",        // 对应的描述
+  vibe: "", // 氛围
+  activity: "", // 你的节奏 / 活动喜好
+  role: "", // 你的聊天偏好
+  mood_level: null, // 1~5
+  mood_note: "", // 对应的描述
 
   // 自我介绍文案（写给她看的）
   intro_text:
@@ -135,9 +117,6 @@ let appState = {
   // 时间
   start_time: "",
   end_time: "",
-
-  // 抽卡结果
-  card_result: ""
 };
 
 function updateAppState(partial) {
@@ -145,7 +124,7 @@ function updateAppState(partial) {
 }
 
 // ========= 首页“不去”逻辑 =========
-let clickCount = 0;        // 记录点击「不去」的次数
+let clickCount = 0; // 记录点击「不去」的次数
 
 const noTexts = [
   "你认真的吗…😭",
@@ -182,10 +161,10 @@ noButton.addEventListener("click", function () {
   }
 
   // 图片变化
-  if (clickCount === 1) mainImage.src = "images/shocked.png";
-  if (clickCount === 2) mainImage.src = "images/think.png";
-  if (clickCount === 3) mainImage.src = "images/angry.png";
-  if (clickCount >= 4) mainImage.src = "images/crying.png";
+  if (clickCount === 1) mainImage.src = "images/nani.jpg";
+  if (clickCount === 2) mainImage.src = "images/xinqingbuxing.jpg";
+  if (clickCount === 3) mainImage.src = "images/weiqu.jpg";
+  if (clickCount >= 4) mainImage.src = "images/stop.jpg";
 });
 
 // ========= 后端：love 表接口 =========
@@ -195,13 +174,13 @@ function startLoveSession() {
   const payload = {
     name: appState.name,
     day: appState.day,
-    stage: STAGE.FIRST
+    stage: STAGE.FIRST,
   };
 
   return fetch(`${API_BASE}/api/love/start`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   })
     .then((res) => res.json())
     .then((data) => {
@@ -231,15 +210,14 @@ function saveLove(extra = {}) {
     intro_text: appState.intro_text || null,
     start_time: appState.start_time || null,
     end_time: appState.end_time || null,
-    card_result: appState.card_result || null,
     stage: appState.stage || null,
-    ...extra
+    ...extra,
   };
 
   fetch(`${API_BASE}/api/love/update`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   }).catch((err) => {
     console.error("saveLove error", err);
   });
@@ -298,9 +276,6 @@ function renderStage() {
     case STAGE.TIME:
       showDateForm();
       break;
-    case STAGE.LOTTERY:
-      showLotteryPage();
-      break;
     case STAGE.FRIEND:
       showFriendCardPage();
       break;
@@ -309,35 +284,40 @@ function renderStage() {
   }
 }
 
-// 通用：给当前页面加左右导航（从问卷开始才会出现）
+// 通用：给当前页面加左右导航
 function attachNavHandlers(options = {}) {
-  if (!STAGES_WITH_NAV.has(appState.stage)) return;
-
-  const prevAllowed = !!options.onPrev;
-  const nextAllowed = !!options.onNext;
+  const { onPrev, onNext } = options;
 
   const prevBtn = document.querySelector(".nav-arrow-left");
   const nextBtn = document.querySelector(".nav-arrow-right");
 
   if (prevBtn) {
-    if (!prevAllowed) {
+    if (!onPrev) {
       prevBtn.classList.add("nav-disabled");
     } else {
-      prevBtn.addEventListener("click", (e) => {
+      prevBtn.classList.remove("nav-disabled");
+      const handlerPrev = (e) => {
+        e.preventDefault();
         e.stopPropagation();
-        options.onPrev && options.onPrev();
-      });
+        onPrev();
+      };
+      prevBtn.addEventListener("click", handlerPrev);
+      prevBtn.addEventListener("touchstart", handlerPrev, { passive: false });
     }
   }
 
   if (nextBtn) {
-    if (!nextAllowed) {
+    if (!onNext) {
       nextBtn.classList.add("nav-disabled");
     } else {
-      nextBtn.addEventListener("click", (e) => {
+      nextBtn.classList.remove("nav-disabled");
+      const handlerNext = (e) => {
+        e.preventDefault();
         e.stopPropagation();
-        options.onNext && options.onNext();
-      });
+        onNext();
+      };
+      nextBtn.addEventListener("click", handlerNext);
+      nextBtn.addEventListener("touchstart", handlerNext, { passive: false });
     }
   }
 }
@@ -346,7 +326,7 @@ function attachNavHandlers(options = {}) {
 function showFirstScreen() {
   appRoot.innerHTML = `
     <div class="first-screen">
-      <img src="images/xixi.jpg" alt="xixi" class="first-image">
+      <img src="images/xixi.jpg" alt="xixi" class="first-image" decoding="async">
       <div class="first-message-line">耶！</div>
       <div class="click-hint first-hint">点击画面继续……</div>
     </div>
@@ -373,7 +353,7 @@ function showCarePopups() {
   const hint = document.querySelector(".second-hint");
   const stage = document.querySelector(".popup-stage");
 
-  const POPUP_COUNT = 140;   // 弹窗数量
+  const POPUP_COUNT = 140; // 弹窗数量
   const POPUP_INTERVAL = 35; // 弹出间隔，越小越快
 
   const pastelColors = [
@@ -457,65 +437,65 @@ function showQuestionnaire() {
 
       <!-- Q1：氛围 -->
       <section class="quiz-card" data-q="vibe">
-        <div class="quiz-q">Q1 第一次见面，你更想要什么氛围？</div>
+        <div class="quiz-q">Q1 你比较喜欢什么样的氛围？</div>
         <div class="quiz-options">
-          <button class="quiz-pill" data-q="vibe" data-value="安静咖啡角落">
-            <span class="emoji">☕</span><span>安静找个小角落慢慢聊</span>
+          <button class="quiz-pill" data-q="vibe" data-value="偏安静一点">
+            <span class="emoji">🌙</span><span>偏安静一点，慢慢把话题打开</span>
           </button>
-          <button class="quiz-pill" data-q="vibe" data-value="城市慢慢散步">
-            <span class="emoji">🚶‍♀️</span><span>在街上随便走走看看</span>
+          <button class="quiz-pill" data-q="vibe" data-value="轻松有点小开心">
+            <span class="emoji">🙂</span><span>整体轻松，有一点小开心就好</span>
           </button>
-          <button class="quiz-pill" data-q="vibe" data-value="人来人往的热闹一点">
-            <span class="emoji">🏙</span><span>人来人往的地方，感受一下城市</span>
+          <button class="quiz-pill" data-q="vibe" data-value="活泼一点也没问题">
+            <span class="emoji">🎈</span><span>氛围可以活泼一点</span>
+          </button>
+          <button class="quiz-pill" data-q="vibe" data-value="看当天状态随缘">
+            <span class="emoji">🍃</span><span>看当天状态，舒服最重要</span>
           </button>
         </div>
       </section>
 
-      <!-- Q2：活动类型 -->
+      <!-- Q2：你自己的节奏 -->
       <section class="quiz-card" data-q="activity">
-        <div class="quiz-q">Q2 这一趟，你更想偏向哪种小活动？</div>
+        <div class="quiz-q">Q2 和朋友出去时，你整体属于哪种节奏？</div>
         <div class="quiz-options">
-          <button class="quiz-pill" data-q="activity" data-value="探索好吃的">
-            <span class="emoji">🍜</span><span>一起找点好吃的</span>
+          <button class="quiz-pill" data-q="activity" data-value="先慢慢熟络型">
+            <span class="emoji">🐢</span><span>刚开始会稍微慢热一点，需要一点时间放松</span>
           </button>
-          <button class="quiz-pill" data-q="activity" data-value="轻松走走看看">
-            <span class="emoji">🌿</span><span>轻松走走看看就好</span>
+          <button class="quiz-pill" data-q="activity" data-value="边走边慢慢放松型">
+            <span class="emoji">🚶‍♀️</span><span>边走边聊、慢慢就能放松下来</span>
           </button>
-          <button class="quiz-pill" data-q="activity" data-value="简单安排一两个小任务">
-            <span class="emoji">🗺</span><span>有一点小计划，但不太紧绷</span>
+          <button class="quiz-pill" data-q="activity" data-value="到哪都能聊得挺开型">
+            <span class="emoji">🌟</span><span>只要氛围还行，基本都能聊得很开</span>
           </button>
         </div>
       </section>
 
-      <!-- Q3：我的人设 -->
+      <!-- Q3：你比较喜欢怎样聊天 -->
       <section class="quiz-card" data-q="role">
-        <div class="quiz-q">Q3 那天你希望我大概是哪种“队友类型”？</div>
+        <div class="quiz-q">Q3 平时聊天时，你比较喜欢哪种感觉？</div>
         <div class="quiz-options">
-          <button class="quiz-pill" data-q="role" data-value="不会冷场担当">
-            <span class="emoji">🤹‍♂️</span><span>负责搞笑，不让气氛尴尬</span>
+          <button class="quiz-pill" data-q="role" data-value="先听听对方，再慢慢分享">
+            <span class="emoji">👂</span><span>先听听对方在想什么，再慢慢接着聊</span>
           </button>
-          <button class="quiz-pill" data-q="role" data-value="认真倾听型">
-            <span class="emoji">👂</span><span>多听你说，偶尔补几句</span>
+          <button class="quiz-pill" data-q="role" data-value="一来一回比较均衡的聊天">
+            <span class="emoji">🤝</span><span>一来一回比较均衡的聊天</span>
           </button>
-          <button class="quiz-pill" data-q="role" data-value="分享故事型">
-            <span class="emoji">📚</span><span>多分享见闻和有趣小故事</span>
-          </button>
-          <button class="quiz-pill" data-q="role" data-value="自由切换型">
-            <span class="emoji">🌀</span><span>现场看你状态自由切换</span>
+          <button class="quiz-pill" data-q="role" data-value="想到什么就自由发挥">
+            <span class="emoji">🌀</span><span>想到什么就自由发挥，话题可以乱飞</span>
           </button>
         </div>
       </section>
 
       <!-- Q4：心情温度计 -->
       <section class="quiz-card" data-q="mood">
-        <div class="quiz-q">Q4 那你现在的大概心情，在下面这根温度计的哪里？</div>
+        <div class="quiz-q">Q4 那你现在的大概心情？</div>
         <div class="mood-thermo">
           <div class="mood-slider-wrap">
             <div class="mood-slider-bg"></div>
             <input
               type="range"
-              min="1"
-              max="5"
+              min="0"
+              max="100"
               step="1"
               class="mood-slider"
               id="moodSlider"
@@ -530,8 +510,8 @@ function showQuestionnaire() {
           好～那我先简单自我介绍一下 →
         </button>
         <div class="quiz-note">
-          怎么选都没关系，只是想在见面前多了解一点点你，
-          <br>也方便我别把第一次见面弄得太尴尬～
+          怎么选都没关系，只是想在见面前多了解一点点你，<br>
+          也方便我别把第一次见面弄得太尴尬～
         </div>
       </div>
 
@@ -568,49 +548,83 @@ function showQuestionnaire() {
     });
   });
 
-  // 心情温度计
+  // 心情温度计：0~100 映射到 5 个区间
   const moodSlider = document.getElementById("moodSlider");
   const moodText = document.getElementById("moodText");
 
-  const moodNotes = {
-    1: "看样子最近事情不少，有点不开心，如果哪天想吐槽我可以当垃圾桶😔",
-    2: "好像有点累，但还撑着。如果那天你只想轻松走走，我也完全 OK。",
-    3: "整体还可以，在慢慢往上爬 🙂",
-    4: "今天状态不错，感觉挺轻松的 😄",
-    5: "好像最近还挺开心的，希望这小小的约见不要给你添烦恼 ✨"
-  };
+  const moodRanges = [
+    {
+      level: 1,
+      min: 0,
+      max: 20,
+      note: "看样子最近事情不少，有点不开心，如果哪天想吐槽我可以当垃圾桶😔",
+    },
+    {
+      level: 2,
+      min: 20,
+      max: 40,
+      note: "好像有点累，但还撑着。如果那天你只想轻松走走，我也完全 OK。",
+    },
+    {
+      level: 3,
+      min: 40,
+      max: 60,
+      note: "整体还可以，在慢慢往上爬 🙂",
+    },
+    {
+      level: 4,
+      min: 60,
+      max: 80,
+      note: "今天状态不错，感觉挺轻松的 😄",
+    },
+    {
+      level: 5,
+      min: 80,
+      max: 100,
+      note: "好像最近还挺开心的，希望这小小的约见不要给你添烦恼 ✨",
+    },
+  ];
 
-  function updateMoodUI(value) {
+  function getMoodEntryFromValue(value) {
     const v = Number(value);
-    const note = moodNotes[v] || "";
-    moodText.textContent = note;
-    updateAppState({ mood_level: v, mood_note: note });
+    for (const item of moodRanges) {
+      if (v >= item.min && (v <= item.max || item.level === 5)) {
+        return item;
+      }
+    }
+    return moodRanges[2]; // 默认第 3 档
   }
 
-  // 默认值：之前选过就用之前的，没有就 3
-  const initialMood = appState.mood_level || 3;
-  moodSlider.value = initialMood;
-  updateMoodUI(initialMood);
+  function updateMoodUIFromSlider(value) {
+    const entry = getMoodEntryFromValue(value);
+    moodText.textContent = entry.note;
+    updateAppState({
+      mood_level: entry.level,
+      mood_note: entry.note,
+    });
+  }
+
+  // 默认值：如果有历史 level，用该区间正中；否则第 3 档
+  const initialLevel = appState.mood_level || 3;
+  const initialRange = moodRanges[initialLevel - 1] || moodRanges[2];
+  const initialSliderValue = (initialRange.min + initialRange.max) / 2;
+
+  moodSlider.value = initialSliderValue;
+  updateMoodUIFromSlider(initialSliderValue);
 
   moodSlider.addEventListener("input", () => {
-    updateMoodUI(moodSlider.value);
+    updateMoodUIFromSlider(moodSlider.value);
   });
 
   const nextBtn = document.getElementById("quizNextBtn");
   const goNext = () => {
-    // 如果你想强制三题都选完再继续，可以取消注释：
-    // if (!appState.vibe || !appState.activity || !appState.role) {
-    //   alert("前面三小题随便选一个就好，方便我别把第一次见面安排得不对劲～");
-    //   return;
-    // }
     gotoStage(STAGE.INTRO);
   };
   nextBtn.addEventListener("click", goNext);
 
-  // 问卷页：只有“下一页”箭头可用，上一页禁用
   attachNavHandlers({
     onPrev: null,
-    onNext: goNext
+    onNext: goNext,
   });
 }
 
@@ -620,34 +634,72 @@ function showIntroPage() {
     <div class="intro-page">
       <div class="intro-card">
         <h2 class="intro-title">那我也简单自我介绍一下 🙂</h2>
-        <p class="intro-subtitle">
-          下面这三格先当作“占位”，等你真的想见我的那天，我再认真补上照片。
-        </p>
 
-        <div class="intro-photos">
-          <div class="intro-photo-slot">
-            <!-- 你之后可以放：<img src="images/intro_1.jpg"> -->
-            生活随手拍位
-          </div>
-          <div class="intro-photo-slot">
-            工作/学习状态位
-          </div>
-          <div class="intro-photo-slot">
-            偶尔有点好笑位
-          </div>
-        </div>
-
+        <!-- 开场两段自我介绍文字 -->
         <div class="intro-text">
           <p>
-            平时大部分时间在写代码，属于安静但聊天会慢慢打开的类型。
+            咳咳，我其实是一个比较沉闷的程序员，但是内心世界很丰富🤗
+            属于安静但聊天会慢慢打开的类型。
           </p>
           <p>
-            偶尔会在城市里随便走走，看到好看的天空、路边的小动物，或者有趣的路人，
-            就会忍不住拍几张照片。
+            偶尔会在城市里随便走走，看到好看的天空🌅、路边的小动物😸，或者有趣的事情🌇，
+            就会忍不住拍几张照片📸。
           </p>
+        </div>
+
+        <!-- 研究生生活，两张图，水平居中 -->
+        <section class="intro-section">
+          <div class="intro-section-title">下面是我丰富的生活</div>
+          <p class="intro-section-desc">
+            研一时经常忙到晚上十点就和同门去校门口吃东西唠嗑
+          </p>
+          <div class="intro-media-row">
+            <div class="intro-photo-slot intro-photo-large">
+              <img src="images/yanjiusheng_1.jpg" alt="研究生生活 1" loading="lazy" decoding="async">
+            </div>
+          </div>
+        </section>
+
+        <!-- 毕业答辩视频 -->
+        <section class="intro-section">
+          <p class="intro-section-desc">
+            然后下面是今年五月份毕业答辩时录下来的，人生非常重要的时刻，意味着要顺利毕业啦～
+          </p>
+          <div class="intro-video-wrap">
+            <!-- 这里把 src 换成你自己的 mp4 路径 -->
+            <video
+              class="intro-video"
+              src="images/dabian_1.mp4"
+              playsinline
+              muted
+              autoplay
+              loop
+              controls
+            ></video>
+          </div>
+        </section>
+
+        <!-- 谢师宴两张图，水平居中 -->
+        <section class="intro-section">
+          <p class="intro-section-desc">
+            然后下面是五月底谢师宴人生第一次喝的烂醉被记录了下来（从此之后再也没有碰过酒……）
+          </p>
+          <div class="intro-media-row">
+            <div class="intro-photo-slot intro-photo-large">
+              <img src="images/xieshiyan_1.jpg" alt="谢师宴 1" loading="lazy" decoding="async">
+            </div>
+            <div class="intro-photo-slot intro-photo-large">
+              <img src="images/xieshiyan_2.jpg" alt="谢师宴 2" loading="lazy" decoding="async">
+            </div>
+          </div>
+        </section>
+
+        <!-- 收尾一段话 -->
+        <div class="intro-text intro-text-bottom">
           <p>
-            对第一次见面的期待很简单：轻松一点、真诚一点，
-            不需要立刻变成很熟的关系，只是希望能多认识一个真实的你。
+            其实我很少特地拍自己😂……
+            然后对这种形式的第一次见面我会重视，但是第一次经历我又不知道处理这种事😔
+            不需要刻意拉近关系，只是希望气氛能够轻松一点、真诚一点，互相认识☺️
           </p>
         </div>
 
@@ -663,8 +715,6 @@ function showIntroPage() {
 
   document.body.style.overflow = "auto";
 
-  // intro_text 已经在 appState 里了，如果你以后想做成可编辑，这里加 textarea 就行
-
   const goPrev = () => {
     gotoStage(STAGE.QUIZ);
   };
@@ -676,9 +726,10 @@ function showIntroPage() {
 
   attachNavHandlers({
     onPrev: goPrev,
-    onNext: goNext
+    onNext: goNext,
   });
 }
+
 
 // ========= 第五幕：自定义弹窗时间选择器（兼容手机 + 状态保存） =========
 function showDateForm() {
@@ -688,7 +739,7 @@ function showDateForm() {
         第一次见面时间就定在 <strong>${DAY_LABEL}</strong> 吧
       </p>
       <p class="date-subtip">
-        你选一个自己舒服的时间段，我只负责准时出现 🌱
+        你选一个自己舒服的时间段就好 🌱
       </p>
 
       <div class="time-input-row">
@@ -708,7 +759,7 @@ function showDateForm() {
 
       <button id="submitDate" class="submit-btn">锁定这个时间</button>
       <p class="form-hint-bottom">
-        这段时间以后，会变成我心里“和你有关的一段小小纪念时间”🕒
+        我会准时到达 🕒
       </p>
 
       <div class="time-picker-overlay">
@@ -767,7 +818,7 @@ function showDateForm() {
 
   buildTimeOptions();
 
-  let activeTarget = null;      // 'start' or 'end'
+  let activeTarget = null; // 'start' or 'end'
   let selectedHour = "19";
   let selectedMinute = "00";
 
@@ -882,15 +933,16 @@ function showDateForm() {
 
     updateAppState({
       start_time: startTime,
-      end_time: endTime
+      end_time: endTime,
     });
 
     saveLove({
       start_time: startTime,
-      end_time: endTime
+      end_time: endTime,
     });
 
-    gotoStage(STAGE.LOTTERY);
+    // 直接进入朋友卡页面（不再经过抽卡）
+    gotoStage(STAGE.FRIEND);
   };
 
   submitBtn.addEventListener("click", handleSubmit);
@@ -902,229 +954,26 @@ function showDateForm() {
 
   attachNavHandlers({
     onPrev: goPrev,
-    onNext: handleSubmit
+    onNext: handleSubmit,
   });
 }
 
-// ========= 第六幕：九宫格抽卡页 =========
-function showLotteryPage() {
-  // 如果已经抽过卡了，就直接展示单张结果
-  if (appState.card_result) {
-    const imgSrc = getPrizeImageByKey(appState.card_result);
-    renderSingleCardResult(imgSrc);
-    return;
-  }
-
-  appRoot.innerHTML = `
-    <div class="lottery-page">
-      <div class="lottery-title">可凭此券兑换奖品</div>
-      <div class="lottery-subtitle">
-        下面 9 张小卡片里藏着一张今天专属于你的效果图，<br>随便点一张试试运气～
-      </div>
-
-      <div class="lottery-grid">
-        ${Array.from({ length: 9 })
-          .map(
-            (_, idx) => `
-            <div class="lottery-card" data-index="${idx}">
-              <img src="${CARD_COVER_IMAGE}" alt="刮卡封面">
-            </div>
-          `
-          )
-          .join("")}
-      </div>
-
-      <div class="lottery-tip">
-        选中一张后，其它卡片会悄悄离场，留下今天的“朋友小奖品”。
-        <br>完成抽卡后，点卡片外的区域会进入下一页。
-      </div>
-
-      <button class="nav-arrow nav-arrow-left" type="button"></button>
-      <button class="nav-arrow nav-arrow-right" type="button"></button>
-    </div>
-  `;
-
-  document.body.style.overflow = "auto";
-
-  const grid = document.querySelector(".lottery-grid");
-  const cards = grid.querySelectorAll(".lottery-card");
-  const page = document.querySelector(".lottery-page");
-  let hasDrawn = false;
-  let chosenImgSrc = null;
-
-  cards.forEach((card) => {
-    card.addEventListener("click", () => {
-      if (hasDrawn) return;
-      hasDrawn = true;
-
-      // 随机选一个奖品图片
-      const randomIndex = Math.floor(Math.random() * PRIZE_IMAGES.length);
-      chosenImgSrc = PRIZE_IMAGES[randomIndex];
-      const chosenKey = PRIZE_KEYS[randomIndex];
-
-      updateAppState({ card_result: chosenKey });
-      saveLove({ card_result: chosenKey });
-
-      // 其他卡片淡出，当前卡片保留
-      cards.forEach((c) => {
-        if (c !== card) {
-          c.classList.add("fade-out");
-        }
-      });
-
-      // 切成单卡展示 + 切换图片
-      setTimeout(() => {
-        renderSingleCardResult(chosenImgSrc);
-      }, 350);
-    });
-  });
-
-  const goPrev = () => {
-    gotoStage(STAGE.TIME);
-  };
-
-  // 右侧箭头：如果已经抽完，就进入下一页；否则不生效
-  const goNext = () => {
-    if (!appState.card_result) return;
-    gotoStage(STAGE.FRIEND);
-  };
-
-  attachNavHandlers({
-    onPrev: goPrev,
-    onNext: goNext
-  });
-
-  // 点击卡片外区域 -> 进入下一页（前提是已经有结果）
-  page.addEventListener("click", (e) => {
-    if (!appState.card_result) return;
-    const cardEl = e.target.closest(".lottery-card");
-    const isNav = e.target.closest(".nav-arrow");
-    if (cardEl || isNav) return;
-    gotoStage(STAGE.FRIEND);
-  });
-}
-
-function getPrizeImageByKey(key) {
-  const idx = PRIZE_KEYS.indexOf(key);
-  if (idx === -1) return PRIZE_IMAGES[0] || "";
-  return PRIZE_IMAGES[idx];
-}
-
-// 抽卡后的单卡展示（支持下载带水印）
-function renderSingleCardResult(imgSrc) {
-  appRoot.innerHTML = `
-    <div class="lottery-page lottery-single">
-      <div class="lottery-title">可凭此券兑换奖品</div>
-      <div class="lottery-subtitle">
-        这是今天的“朋友小奖品”，如果你喜欢，可以存起来当个小纪念。
-      </div>
-
-      <div class="lottery-grid">
-        <div class="lottery-card">
-          <img src="${imgSrc}" alt="抽到的卡片" id="lotteryResultImg">
-          <button class="lottery-download-btn" type="button">保存到本地</button>
-        </div>
-      </div>
-
-      <div class="lottery-tip">
-        点卡片外的区域，会进入下一页的“朋友卡”。<br>
-        如果只是想看看，也可以停在这里不动～
-      </div>
-
-      <button class="nav-arrow nav-arrow-left" type="button"></button>
-      <button class="nav-arrow nav-arrow-right" type="button"></button>
-    </div>
-  `;
-
-  const page = document.querySelector(".lottery-page");
-  const downloadBtn = document.querySelector(".lottery-download-btn");
-  const imgEl = document.getElementById("lotteryResultImg");
-
-  const goPrev = () => {
-    // 回去仍然是抽卡页，但因为有 card_result，会直接展示单卡
-    gotoStage(STAGE.LOTTERY);
-  };
-  const goNext = () => {
-    gotoStage(STAGE.FRIEND);
-  };
-
-  attachNavHandlers({
-    onPrev: goPrev,
-    onNext: goNext
-  });
-
-  // 点击卡片外区域 -> 下一页
-  page.addEventListener("click", (e) => {
-    const cardEl = e.target.closest(".lottery-card");
-    const isNav = e.target.closest(".nav-arrow");
-    if (cardEl || isNav) return;
-    gotoStage(STAGE.FRIEND);
-  });
-
-  // 下载带 @fdd 水印
-  downloadBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (!imgEl) return;
-    downloadWithWatermark(imgEl.src, "@fdd");
-  });
-}
-
-// 简单的 canvas 加水印下载
-function downloadWithWatermark(src, watermarkText) {
-  const img = new Image();
-  img.crossOrigin = "anonymous"; // 同域不影响，跨域看图片服务器配置
-  img.src = src;
-
-  img.onload = function () {
-    const canvas = document.createElement("canvas");
-    canvas.width = img.width;
-    canvas.height = img.height;
-
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0);
-
-    const fontSize = Math.floor(canvas.width * 0.05);
-    ctx.font = `${fontSize}px sans-serif`;
-    ctx.textAlign = "right";
-    ctx.textBaseline = "bottom";
-
-    const x = canvas.width - 20;
-    const y = canvas.height - 20;
-
-    ctx.strokeStyle = "rgba(0,0,0,0.35)";
-    ctx.lineWidth = 3;
-    ctx.strokeText(watermarkText, x, y);
-
-    ctx.fillStyle = "rgba(255,255,255,0.9)";
-    ctx.fillText(watermarkText, x, y);
-
-    const a = document.createElement("a");
-    a.href = canvas.toDataURL("image/png");
-    a.download = `card_${loveId || "friend"}.png`;
-    a.click();
-  };
-
-  img.onerror = function () {
-    alert("图片好像加载失败了，稍后再试试～");
-  };
-}
-
-// ========= 第七幕：朋友卡（用你原来的朋友卡布局） =========
+// ========= 最后一幕：朋友卡 =========
 function showFriendCardPage() {
   const displayName = appState.name || "你";
   const startTime = appState.start_time || "--:--";
   const endTime = appState.end_time || "--:--";
 
   const vibeText = appState.vibe || "你觉得舒服的氛围";
-  const activityText = appState.activity || "随缘安排一两个小活动";
-  const roleText = appState.role || "现场看你状态自由切换";
+  const activityText = appState.activity || "你习惯的相处节奏";
+  const roleText = appState.role || "你喜欢的聊天方式";
   const moodNote = appState.mood_note || "";
 
   appRoot.innerHTML = `
     <div class="friend-card-screen">
       <div class="friend-card">
         <div class="friend-card-header">
-          <span class="friend-card-title">「认识你的一小步」朋友卡</span>
+          <span class="friend-card-title">「朋友卡」</span>
           <span class="friend-card-icon">📘</span>
         </div>
 
@@ -1137,17 +986,17 @@ function showFriendCardPage() {
         <div class="friend-card-divider"></div>
 
         <div class="friend-card-row">
-          <span class="fc-label">你想要的氛围：</span>
+          <span class="fc-label">你喜欢的氛围：</span>
           <span class="fc-text">${vibeText}</span>
         </div>
 
         <div class="friend-card-row">
-          <span class="fc-label">小小期待的安排：</span>
+          <span class="fc-label">你习惯的相处节奏：</span>
           <span class="fc-text">${activityText}</span>
         </div>
 
         <div class="friend-card-row">
-          <span class="fc-label">我当天的出场人设：</span>
+          <span class="fc-label">你舒服的聊天方式：</span>
           <span class="fc-text">${roleText}</span>
         </div>
 
@@ -1161,17 +1010,12 @@ function showFriendCardPage() {
         }
 
         <p class="friend-card-paragraph">
-          见面这件事，我会当成一件认真又轻松的小事来对待。<br>
-          希望那天你是放松的，不需要勉强自己。
-        </p>
-
-        <p class="friend-card-paragraph friend-card-soft">
-          如果那天你临时不太想见，也没关系。<br>
-          提前跟我说一声就好，我会真心祝你那天也过得顺顺利利又开心 ✨
+          <br>
+          希望那天你是放松的。
         </p>
 
         <div class="friend-card-img-wrap">
-          <img src="images/hug.png" alt="可爱拥抱" class="friend-card-img">
+          <img src="images/xixi.jpg" alt="可爱猫猫" class="friend-card-img" loading="lazy" decoding="async">
         </div>
 
         <button class="nav-arrow nav-arrow-left" type="button"></button>
@@ -1183,12 +1027,12 @@ function showFriendCardPage() {
   document.body.style.overflow = "auto";
 
   const goPrev = () => {
-    gotoStage(STAGE.LOTTERY);
+    // 从朋友卡返回上一页就是选时间页
+    gotoStage(STAGE.TIME);
   };
 
-  // 最后一页就不开“下一页”了
   attachNavHandlers({
     onPrev: goPrev,
-    onNext: null
+    onNext: null,
   });
 }
