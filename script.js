@@ -1,3 +1,4 @@
+
 // ========= 基本 DOM =========
 const appRoot = document.getElementById("appRoot");
 let yesButton = document.getElementById("yes");
@@ -88,7 +89,7 @@ const careMessages = [
   "照顾好自己",
   "注意保暖别感冒啦～",
   "会好起来的",
-  "很高兴认识你"
+  "很高兴认识你",
 ];
 
 // ========= 全局状态：一次完整流程的数据 =========
@@ -194,13 +195,23 @@ function startLoveSession() {
     });
 }
 
-// 更新 love 记录（某些字段 + 当前阶段）
-// ⭐ 现在会返回一个 Promise，方便判断是否保存成功
-function saveLove(extra = {}) {
+/**
+ * 更新 love 记录（某些字段 + 当前阶段）
+ * 默认是“静默模式”，失败只在控制台打印。
+ * 如果传入 { needResult: true }，则返回一个 Promise，失败会 reject，
+ * 这样就可以在某些关键步骤（比如锁定时间）里感知到失败。
+ */
+function saveLove(extra = {}, options = {}) {
+  const { needResult = false } = options || {};
+
   if (!loveId) {
-    console.warn("saveLove: missing loveId, maybe server not running?");
-    // 没有 loveId 基本就是服务器没开，直接返回失败结果
-    return Promise.resolve({ ok: false, reason: "NO_ID" });
+    const err = new Error("loveId is not ready yet");
+    if (needResult) {
+      return Promise.reject(err);
+    } else {
+      console.warn("saveLove skipped:", err.message);
+      return;
+    }
   }
 
   const payload = {
@@ -219,32 +230,36 @@ function saveLove(extra = {}) {
     ...extra,
   };
 
-  return fetch(`${API_BASE}/api/love/update`, {
+  const req = fetch(`${API_BASE}/api/love/update`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-  })
-    .then((res) => {
+  });
+
+  if (needResult) {
+    return req.then((res) => {
       if (!res.ok) {
-        throw new Error("saveLove response not ok: " + res.status);
+        throw new Error("saveLove failed with status " + res.status);
       }
-      // 后端就算不返回内容也没关系
-      return res
-        .json()
-        .catch(() => ({}))
-        .then((data) => ({ ok: true, data }));
-    })
-    .catch((err) => {
-      console.error("saveLove error", err);
-      return { ok: false, error: err };
+      // 后端没必要一定返回 json，这里做个兜底
+      try {
+        return res.json();
+      } catch {
+        return null;
+      }
     });
+  } else {
+    req.catch((err) => {
+      console.error("saveLove error", err);
+    });
+  }
 }
 
 // 切换阶段时统一调用
 function gotoStage(newStage) {
   updateAppState({ stage: newStage });
   window.scrollTo(0, 0);
-  // 这里不关心结果，只是顺手存一下
+  // 这里还是用“静默模式”存一次，不打断用户体验
   saveLove({ stage: newStage });
   renderStage();
 }
@@ -640,7 +655,7 @@ function showQuestionnaire() {
   };
   nextBtn.addEventListener("click", goNext);
 
-  // ⭐ 问卷页允许返回到弹窗雨
+  // ⭐ 可以从问卷页返回到弹幕雨页
   attachNavHandlers({
     onPrev: () => gotoStage(STAGE.POPUPS),
     onNext: goNext,
@@ -657,21 +672,30 @@ function showIntroPage() {
         <!-- 开场两段自我介绍文字 -->
         <div class="intro-text">
           <p>
-            我现在在中国电子的一家子单位做系统开发（地址：中山市档案馆）<br>
+            本人今年26岁，在中国电子的子单位做系统开发<br>
+             <div class="intro-media-row">
+              <div class="intro-photo-slot intro-photo-large">
+                <img src="images/work_1.jpg" alt="工作 1" loading="lazy" decoding="async">
+              </div>
+               <div class="intro-photo-slot intro-photo-large">
+                <img src="images/work_2.jpg" alt="工作 2" loading="lazy" decoding="async">
+              </div>
+            </div>
             咳咳，我虽然是一个比较沉闷的程序员，但是内心世界却很丰富🤗
             日常属于安静但聊天会慢慢打开的类型。
           </p>
           <p>
             偶尔会在城市里随便走走，看到好看的天空🌅、路边的小动物😸，或者有趣的事情🌇，
-            就会忍不住拍几张照片📸。
+            就会忍不住拍几张照片📸。<br>
+            日常爱好是唱歌🎤，看番，健身，打游戏🎮
           </p>
         </div>
 
         <!-- 研究生生活，两张图，水平居中 -->
         <section class="intro-section">
-          <div class="intro-section-title">下面是我以前的生活</div>
+          <div class="intro-section-title">下面是我最近的生活</div>
           <p class="intro-section-desc">
-            研一时经常忙到晚上十点就和同门去校门口吃东西唠嗑
+            读研时经常忙到晚上十点就和同门去校门口吃东西唠嗑
           </p>
           <div class="intro-media-row">
             <div class="intro-photo-slot intro-photo-large">
@@ -701,7 +725,7 @@ function showIntroPage() {
         <!-- 谢师宴两张图，水平居中 -->
         <section class="intro-section">
           <p class="intro-section-desc">
-            然后下面是五月底谢师宴人生第一次喝的烂醉被记录了下来（从此之后再也不会碰酒了……）
+            然后下面是五月底谢师宴人生第一次喝的烂醉被记录了下来（从此之后再也不会碰酒精了……）
           </p>
           <div class="intro-media-row">
             <div class="intro-photo-slot intro-photo-large">
@@ -717,7 +741,7 @@ function showIntroPage() {
         <div class="intro-text intro-text-bottom">
           <p>
             其实我很少特地拍自己😂……<br>
-            然后是第一次经历这种形式，很重视但是又不擅长处理这种事😔<br>
+            然后是第一次经历这种形式的场合，希望自己重视但是又不擅长处理这种事😔<br>
             不需要刻意拉近关系，只是希望气氛能够轻松一点、真诚一点，互相认识☺️
           </p>
         </div>
@@ -749,47 +773,37 @@ function showIntroPage() {
   });
 }
 
-/**
- * ========= 可爱提示弹窗：服务器没开 =========
- */
-function showServerOffDialog() {
-  // 已经有一个在了就不重复创建
-  if (document.querySelector(".server-off-mask")) return;
+// ========= 可爱提示弹窗（服务器没开的时候用） =========
+function showServerClosedModal() {
+  // 已经有就先删掉，避免重复
+  const old = document.querySelector(".cute-modal-overlay");
+  if (old) old.remove();
 
-  const mask = document.createElement("div");
-  mask.className = "server-off-mask";
-
-  mask.innerHTML = `
-    <div class="server-off-dialog">
-      <div class="server-off-icon">😴</div>
-      <div class="server-off-title">呀，服务器在睡觉……</div>
-      <div class="server-off-text">
-        现在好像不在服务器开启的时间噢～<br>
-        快联系 <span class="server-off-name">方泽铭</span> 去把服务器打开吧！
+  const overlay = document.createElement("div");
+  overlay.className = "cute-modal-overlay";
+  overlay.innerHTML = `
+    <div class="cute-modal">
+      <div class="cute-modal-title">服务器在打瞌睡 😴</div>
+      <div class="cute-modal-body">
+        现在不在服务器开启的时间噢～<br>
+        快去联系 <span class="cute-modal-name">方泽铭</span> 把小服务器叫醒！
       </div>
-      <button class="server-off-btn" id="serverOffOk">好，我这就去喊他</button>
+      <button class="cute-modal-btn">好，我这就去拍醒他</button>
     </div>
   `;
 
+  document.body.appendChild(overlay);
+
+  const btn = overlay.querySelector(".cute-modal-btn");
   const close = () => {
-    mask.classList.add("fade-out");
-    setTimeout(() => {
-      if (mask.parentNode) {
-        mask.parentNode.removeChild(mask);
-      }
-    }, 260);
+    overlay.classList.add("cute-modal-hide");
+    setTimeout(() => overlay.remove(), 220);
   };
 
-  mask.addEventListener("click", (e) => {
-    if (e.target === mask) {
-      close();
-    }
+  btn.addEventListener("click", close);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) close();
   });
-
-  const okBtn = mask.querySelector("#serverOffOk");
-  okBtn.addEventListener("click", close);
-
-  document.body.appendChild(mask);
 }
 
 // ========= 第五幕：自定义弹窗时间选择器（兼容手机 + 状态保存） =========
@@ -978,7 +992,7 @@ function showDateForm() {
     btn.classList.add("has-value");
   }
 
-  // ⭐ 这里改成：只有后端保存成功才进入朋友卡，否则弹可爱提示
+  // ⭐ 这里改成：必须成功提交到服务器，才进入朋友卡
   const handleSubmit = () => {
     const startTime = startHidden.value;
     const endTime = endHidden.value;
@@ -998,19 +1012,32 @@ function showDateForm() {
       end_time: endTime,
     });
 
-    // 真正去保存时间，如果失败就提示“服务器没开”
-    saveLove({
-      start_time: startTime,
-      end_time: endTime,
-    }).then((result) => {
-      if (!result || !result.ok) {
-        // 数据没写进去，弹出可爱弹窗
-        showServerOffDialog();
-        return;
-      }
-      // 保存成功，再进入朋友卡页面
-      gotoStage(STAGE.FRIEND);
-    });
+    // 按钮进入“加载中”状态
+    submitBtn.disabled = true;
+    const oldText = submitBtn.textContent;
+    submitBtn.textContent = "正在和服务器说悄悄话…";
+
+    // 这一次用 needResult: true，失败就会进入 catch
+    saveLove(
+      {
+        start_time: startTime,
+        end_time: endTime,
+      },
+      { needResult: true }
+    )
+      .then(() => {
+        // 成功之后再进入朋友卡
+        gotoStage(STAGE.FRIEND);
+      })
+      .catch((err) => {
+        console.error("锁定时间失败：", err);
+        // 显示可爱的提示弹窗
+        showServerClosedModal();
+      })
+      .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = oldText;
+      });
   };
 
   submitBtn.addEventListener("click", handleSubmit);
